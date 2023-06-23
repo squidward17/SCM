@@ -14,26 +14,32 @@ def update_graph():
     data = get_data()
     plt.clf()
 
+    graph = nx.DiGraph()  # Directed graph to represent the relationships
+
+    node_mapping = {
+        0: 'factory',
+        1: 'distributor',
+        2: 'retailer'
+    }
+
     for node in data['node']:
         node_type = node['type']
-        production_rate = node.get('production_rate', [])
-        sales_rate = node.get('sales_rate', [])
-        target_production_rate = node.get('target_production_rate', [])
-        target_sales_rate = node.get('target_sales_rate', [])
-        reserve = node.get('reserve', [])
-        graph.add_node(node_type, production_rate=production_rate, sales_rate=sales_rate,
-                       target_production_rate=target_production_rate, target_sales_rate=target_sales_rate,
-                       reserve=reserve)
+        if node_type in node_mapping.values():
+            graph.add_node(node_type)
 
     for edge in data['edge']:
         direction = edge['direction']
-        graph.add_edge(edge[direction[0]], edge[direction[1]])
-
+        if direction[0] in node_mapping and direction[1] in node_mapping:
+            provider = node_mapping[direction[0]]
+            receiver = node_mapping[direction[1]]
+            graph.add_edge(provider, receiver)
     pos = nx.spring_layout(graph)
     nx.draw_networkx(graph, pos, with_labels=True, node_color='lightblue')
     plt.title('Supply Chain Network')
     plt.axis('off')
     canvas.draw()
+
+
 
 def open_live_graph():
     global live_graph_window
