@@ -89,33 +89,39 @@ def open_detail_page():
     option_frame = tk.Frame(detail_window)
     option_frame.pack(padx=20, pady=20)
 
-    button_frame = tk.Frame(detail_window) 
+    button_frame = tk.Frame(detail_window)  # Frame for the button
     button_frame.pack()
 
-    show_detail_button = tk.Button(button_frame, text="Show Detail")  
+    show_detail_button = tk.Button(button_frame, text="Show Detail")  # Create the button initially
     show_detail_button.pack()
 
     def show_category_detail(*args):
-        category = category_var.get()
+        category = category_var.get().capitalize()  # Capitalize the category option
         data = get_data()
         node_mapping = {
-            'factory': 0,
-            'distributor': 1,
-            'retailer': 2
+            'Factory': 0,
+            'Distributor': 1,
+            'Retailer': 2
         }
+
+        if category not in node_mapping:  
+            return
 
         selected_node = data['node'][node_mapping[category]]
 
-        if category == 'factory':
-            options = ['production_rate', 'target_production_rate', 'reserve']
-        elif category == 'distributor' or category == 'retailer':
-            options = ['sales_rate', 'target_sales_rate', 'reserve']
+        if category == 'Factory':
+            options = ['Production Rate', 'Target Production Rate', 'Reserve']
+        elif category == 'Distributor' or category == 'Retailer':
+            options = ['Sales Rate', 'Target Sales Rate', 'Reserve']
 
         def show_data_table():
             selected_option = option_var.get()
             column_names = ['No.', selected_option.title()]
+            selected_option = selected_option.replace(' ', '_').lower()
+            if selected_option not in selected_node:  
+                return
             data_list = selected_node[selected_option]
-            table_title = selected_option.title()
+            table_title = selected_option.replace('_', ' ').title()
 
             for widget in detail_window.winfo_children():
                 if isinstance(widget, tk.Frame) and widget != option_frame and widget != button_frame:
@@ -152,23 +158,19 @@ def open_detail_page():
         option_dropdown = tk.OptionMenu(option_frame, option_var, *options)
         option_dropdown.pack()
 
-        show_detail_button.pack()  # Move the button to the top
+        show_detail_button.pack()  
 
-        # Bind show_data_table to the button click event
         show_detail_button.configure(command=show_data_table)
 
     category_label = tk.Label(detail_window, text="Select Category:")
     category_label.pack()
     category_var = tk.StringVar()
-    category_dropdown = tk.OptionMenu(detail_window, category_var, "factory", "distributor", "retailer")
+    category_dropdown = tk.OptionMenu(detail_window, category_var, "Factory", "Distributor", "Retailer")
     category_dropdown.pack()
 
-    # Hide the button initially
     show_detail_button.pack_forget()
 
-    # Bind show_category_detail to the category selection event
     category_var.trace_add('write', show_category_detail)
-
 
 
 window = tk.Tk()
