@@ -89,10 +89,10 @@ def open_detail_page():
     option_frame = tk.Frame(detail_window)
     option_frame.pack(padx=20, pady=20)
 
-    button_frame = tk.Frame(detail_window)  # Frame for the button
+    button_frame = tk.Frame(detail_window) 
     button_frame.pack()
 
-    show_detail_button = tk.Button(button_frame, text="Show Detail")  # Create the button initially
+    show_detail_button = tk.Button(button_frame, text="Show Detail")  
     show_detail_button.pack()
 
     def show_category_detail(*args):
@@ -117,7 +117,6 @@ def open_detail_page():
             data_list = selected_node[selected_option]
             table_title = selected_option.title()
 
-            # Remove previous table_frame if exists
             for widget in detail_window.winfo_children():
                 if isinstance(widget, tk.Frame) and widget != option_frame and widget != button_frame:
                     widget.destroy()
@@ -144,7 +143,6 @@ def open_detail_page():
 
             detail_window.geometry(f'800x{table_frame.winfo_height() + 100}')
 
-        # Clear previous options
         for widget in option_frame.winfo_children():
             widget.destroy()
 
