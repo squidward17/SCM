@@ -71,7 +71,7 @@ def open_detail_page():
     detail_window.geometry('800x600')
 
     def show_category_detail(category):
-        # Function to show the detail of the selected category
+        
         data = get_data()
         node_mapping = {
             'factory': 0,
@@ -86,15 +86,12 @@ def open_detail_page():
         elif category == 'distributor' or category == 'retailer':
             options = ['sales_rate', 'target_sales_rate', 'reserve']
 
-        # Remove previous content when switching categories
         for widget in detail_window.winfo_children():
             widget.destroy()
 
-        # Create option frame
         option_frame = tk.Frame(detail_window)
         option_frame.pack(padx=20, pady=20)
 
-        # Create dropdown to select the data
         option_label = tk.Label(option_frame, text="Select Data:")
         option_label.pack()
         option_var = tk.StringVar()
@@ -110,44 +107,34 @@ def open_detail_page():
             table_frame = tk.Frame(detail_window)
             table_frame.pack(padx=20, pady=10)
 
-            # Create Treeview widget
             tree = ttk.Treeview(table_frame, columns=column_names, show='headings')
             tree.pack(side='left')
 
-            # Configure columns
             for col in column_names:
                 tree.heading(col, text=col)
 
-            # Add data to the table
             for i, data in enumerate(data_list, start=1):
                 tree.insert('', 'end', values=(i, data))
 
-            # Add scrollbar
             scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=tree.yview)
             scrollbar.pack(side='right', fill='y')
 
-            # Configure scrollbar
             tree.configure(yscrollcommand=scrollbar.set)
 
-            # Configure table size
             table_frame.update()
             tree.config(height=table_frame.winfo_height() // 20)
 
-            # Set window size to fit the table
             detail_window.geometry(f'800x{table_frame.winfo_height() + 100}')
 
-        # Create button to show the selected data
         show_detail_button = tk.Button(option_frame, text="Show Detail", command=show_data_table)
         show_detail_button.pack()
 
-    # Create a dropdown to select the category
     category_label = tk.Label(detail_window, text="Select Category:")
     category_label.pack()
     category_var = tk.StringVar()
     category_dropdown = tk.OptionMenu(detail_window, category_var, "factory", "distributor", "retailer")
     category_dropdown.pack()
 
-    # Create a button to show the selected category detail
     show_detail_button = tk.Button(detail_window, text="Show Detail", command=lambda: show_category_detail(category_var.get()))
     show_detail_button.pack()
 
@@ -174,7 +161,6 @@ data = get_data()
 
 update_graph()
 
-# Variables
 option_var = tk.StringVar()
 
 show_detail_button = tk.Button(window, text="Show More Detail", command=open_detail_page)
