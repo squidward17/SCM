@@ -65,13 +65,38 @@ def open_live_graph():
 
     canvas.draw()
 
+    live_graph_window.after(5000, update_live_graph, canvas)
+
+def update_live_graph(canvas):
+    data = get_data()
+    money = data['resource']['money']
+
+    plt.clf()
+    plt.plot([money] * 10)
+    plt.xlabel('Time')
+    plt.ylabel('Return Rate')
+    plt.title('Return Rate Live Time Graph')
+
+    canvas.draw()
+
+    canvas.master.after(5000, update_live_graph, canvas)
+
 def open_detail_page():
     detail_window = tk.Toplevel(window)
     detail_window.title("Show More Detail")
     detail_window.geometry('800x600')
 
-    def show_category_detail(category):
-        
+    option_frame = tk.Frame(detail_window)
+    option_frame.pack(padx=20, pady=20)
+
+    button_frame = tk.Frame(detail_window)  # Frame for the button
+    button_frame.pack()
+
+    show_detail_button = tk.Button(button_frame, text="Show Detail")  # Create the button initially
+    show_detail_button.pack()
+
+    def show_category_detail(*args):
+        category = category_var.get()
         data = get_data()
         node_mapping = {
             'factory': 0,
@@ -86,23 +111,16 @@ def open_detail_page():
         elif category == 'distributor' or category == 'retailer':
             options = ['sales_rate', 'target_sales_rate', 'reserve']
 
-        for widget in detail_window.winfo_children():
-            widget.destroy()
-
-        option_frame = tk.Frame(detail_window)
-        option_frame.pack(padx=20, pady=20)
-
-        option_label = tk.Label(option_frame, text="Select Data:")
-        option_label.pack()
-        option_var = tk.StringVar()
-        option_dropdown = tk.OptionMenu(option_frame, option_var, *options)
-        option_dropdown.pack()
-
         def show_data_table():
             selected_option = option_var.get()
             column_names = ['No.', selected_option.title()]
             data_list = selected_node[selected_option]
             table_title = selected_option.title()
+
+            # Remove previous table_frame if exists
+            for widget in detail_window.winfo_children():
+                if isinstance(widget, tk.Frame) and widget != option_frame and widget != button_frame:
+                    widget.destroy()
 
             table_frame = tk.Frame(detail_window)
             table_frame.pack(padx=20, pady=10)
@@ -126,8 +144,20 @@ def open_detail_page():
 
             detail_window.geometry(f'800x{table_frame.winfo_height() + 100}')
 
-        show_detail_button = tk.Button(option_frame, text="Show Detail", command=show_data_table)
-        show_detail_button.pack()
+        # Clear previous options
+        for widget in option_frame.winfo_children():
+            widget.destroy()
+
+        option_label = tk.Label(option_frame, text="Select Data:")
+        option_label.pack()
+        option_var = tk.StringVar()
+        option_dropdown = tk.OptionMenu(option_frame, option_var, *options)
+        option_dropdown.pack()
+
+        show_detail_button.pack()  # Move the button to the top
+
+        # Bind show_data_table to the button click event
+        show_detail_button.configure(command=show_data_table)
 
     category_label = tk.Label(detail_window, text="Select Category:")
     category_label.pack()
@@ -135,8 +165,12 @@ def open_detail_page():
     category_dropdown = tk.OptionMenu(detail_window, category_var, "factory", "distributor", "retailer")
     category_dropdown.pack()
 
-    show_detail_button = tk.Button(detail_window, text="Show Detail", command=lambda: show_category_detail(category_var.get()))
-    show_detail_button.pack()
+    # Hide the button initially
+    show_detail_button.pack_forget()
+
+    # Bind show_category_detail to the category selection event
+    category_var.trace_add('write', show_category_detail)
+
 
 
 window = tk.Tk()
@@ -167,5 +201,6 @@ show_detail_button = tk.Button(window, text="Show More Detail", command=open_det
 show_detail_button.pack(pady=10)
 
 window.mainloop()
+
 
 
