@@ -15,7 +15,7 @@ canvas = None
 maximized_graph_window = None  
 
 def update_graph():
-    global canvas, maximized_graph_window  
+    global canvas, maximized_graph_window
 
     data = get_data()
     plt.clf()
@@ -40,8 +40,13 @@ def update_graph():
             receiver = node_mapping[direction[1]]
             graph.add_edge(provider, receiver)
 
-    pos = nx.spring_layout(graph)
-    nx.draw_networkx(graph, pos, with_labels=True, node_color='lightblue')
+    pos = nx.spring_layout(graph)  
+
+    pos_dict = {node: pos[node] if node in pos else (0, 0) for node in graph.nodes}
+
+    pos_dict['factory'] = (0.5, 1.0)
+
+    nx.draw_networkx(graph, pos=pos_dict, with_labels=True, node_color='lightblue')
     plt.title('Supply Chain Network')
     plt.axis('off')
 
@@ -76,7 +81,7 @@ def update_graph():
         maximized_graph_window.bind('<Escape>', lambda event: close_max_window())
 
     canvas.mpl_connect('button_press_event', maximize_graph)
-
+    network_graph_button.pack_forget()
 
 def open_live_graph():
     global live_graph_window
@@ -170,8 +175,8 @@ def open_detail_page():
             for col in column_names:
                 tree.heading(col, text=col)
 
-            tree.column(column_names[0], width=50,anchor='center')  
-            tree.column(column_names[1], width=550,anchor='center') 
+            tree.column(column_names[0], width=50, anchor='center')  
+            tree.column(column_names[1], width=550, anchor='center') 
 
             for i, data in enumerate(data_list, start=1):
                 tree.insert('', 'end', values=(i, data))
@@ -207,29 +212,28 @@ def open_detail_page():
 
     show_detail_button.pack_forget()
 
-    category_var.trace_add('write', show_category_detail)
+    category_var.trace('w', show_category_detail)
 
 window = tk.Tk()
 window.title("Supply Chain Management")
+window.geometry('800x600')
 
 graph_frame = tk.Frame(window)
-graph_frame.pack(padx=10, pady=10)
+graph_frame.pack(padx=20, pady=20)
 
-figure = plt.figure(figsize=(6, 4))
-canvas = FigureCanvasTkAgg(figure, master=graph_frame)
-canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+button_frame = tk.Frame(window)
+button_frame.pack(pady=20)
 
-update_button = tk.Button(window, text="Update Graph", command=update_graph)
-update_button.pack(pady=10)
+network_graph_button = tk.Button(button_frame, text="Show Network Graph", command=update_graph, width=20, height=2)
+network_graph_button.pack(pady=5)
 
-live_graph_button = tk.Button(window, text="Open Live-Time Graph", command=open_live_graph)
-live_graph_button.pack(pady=10)
+return_rate_button = tk.Button(button_frame, text="Show Return Rate", command=open_live_graph, width=20, height=2)
+return_rate_button.pack(pady=5)
 
-show_detail_button = tk.Button(window, text="Show More Detail", command=open_detail_page)
-show_detail_button.pack(pady=10)
+detail_button = tk.Button(button_frame, text="Open Detail Page", command=open_detail_page, width=20, height=2)
+detail_button.pack(pady=5)
 
 window.mainloop()
-
 
 
 
