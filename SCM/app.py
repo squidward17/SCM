@@ -4,6 +4,7 @@ import requests
 import json
 import matplotlib.pyplot as plt
 import networkx as nx
+import threading
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 def get_data():
@@ -31,22 +32,17 @@ def update_graph():
     for node in data['node']:
         node_type = node['type']
         if node_type in node_mapping.values():
-            graph.add_node(node_type)
+            capitalized_node_type = node_type.capitalize()
+            graph.add_node(capitalized_node_type, data=node)
 
     for edge in data['edge']:
         direction = edge['direction']
         if direction[0] in node_mapping and direction[1] in node_mapping:
-            provider = node_mapping[direction[0]]
-            receiver = node_mapping[direction[1]]
+            provider = node_mapping[direction[0]].capitalize()
+            receiver = node_mapping[direction[1]].capitalize()
             graph.add_edge(provider, receiver)
 
-    pos = nx.spring_layout(graph)  
-
-    pos_dict = {node: pos[node] if node in pos else (0, 0) for node in graph.nodes}
-
-    pos_dict['factory'] = (0.5, 1.0)
-
-    nx.draw_networkx(graph, pos=pos_dict, with_labels=True, node_color='lightblue')
+    nx.draw_networkx(graph, with_labels=True, node_color='lightblue')
     plt.title('Supply Chain Network')
     plt.axis('off')
 
@@ -87,7 +83,7 @@ def open_live_graph():
     global live_graph_window
 
     live_graph_window = tk.Toplevel(window)
-    live_graph_window.title("Return Rate Live Time Graph")
+    live_graph_window.title("Profit Live Time Graph")
     live_graph_window.geometry('800x600')
 
     data = get_data()
@@ -99,8 +95,8 @@ def open_live_graph():
 
     plt.plot([money] * 10)
     plt.xlabel('Time')
-    plt.ylabel('Return Rate')
-    plt.title('Return Rate Live Time Graph')
+    plt.ylabel('Profit')
+    plt.title('Profit Live Time Graph')
 
     canvas.draw()
 
@@ -113,12 +109,12 @@ def update_live_graph(canvas):
     plt.clf()
     plt.plot([money] * 10)
     plt.xlabel('Time')
-    plt.ylabel('Return Rate')
-    plt.title('Return Rate Live Time Graph')
+    plt.ylabel('Profit')
+    plt.title('Profit Live Time Graph')
 
     canvas.draw()
 
-    canvas.master.after(5000, update_live_graph, canvas)
+    canvas._tkcanvas.after(5000, update_live_graph, canvas)
 
 def open_detail_page():
     detail_window = tk.Toplevel(window)
@@ -149,17 +145,17 @@ def open_detail_page():
         selected_node = data['node'][node_mapping[category]]
 
         if category == 'Factory':
-            options = ['Production Rate', 'Target Production Rate', 'Reserve']
+            options = ['Production Rate', 'Target Production Rate', 'Reserve','Worker']
         elif category == 'Distributor' or category == 'Retailer':
-            options = ['Sales Rate', 'Target Sales Rate', 'Reserve']
+            options = ['Sales Rate', 'Target Sales Rate', 'Reserve','Worker']
 
         def show_data_table():
             selected_option = option_var.get()
             column_names = ['No.', selected_option.title()]
-            selected_option = selected_option.replace(' ', '_').lower()
-            if selected_option not in selected_node:
+            selected_option_key = selected_option.replace(' ', '_').lower()
+            if selected_option_key not in selected_node:
                 return
-            data_list = selected_node[selected_option]
+            data_list = selected_node[selected_option_key]
             table_title = selected_option.replace('_', ' ').title()
 
             for widget in detail_window.winfo_children():
@@ -175,11 +171,28 @@ def open_detail_page():
             for col in column_names:
                 tree.heading(col, text=col)
 
-            tree.column(column_names[0], width=50, anchor='center')  
-            tree.column(column_names[1], width=550, anchor='center') 
+            tree.column(column_names[0], width=50, anchor='center')
+            tree.column(column_names[1], width=550, anchor='center')
 
-            for i, data in enumerate(data_list, start=1):
-                tree.insert('', 'end', values=(i, data))
+            def update_table():
+                if detail_window.winfo_exists(): 
+                  data = get_data()
+                  selected_node = data['node'][node_mapping[category]]
+
+                  if selected_option_key in selected_node:
+                     data_list = selected_node[selected_option_key]
+
+                     tree.delete(*tree.get_children())
+
+                     if isinstance(data_list, (list, tuple)):
+                       for i, data in enumerate(data_list, start=1):
+                         tree.insert('', 'end', values=(i, data))
+                     else:
+                         tree.insert('', 'end', values=(1, data_list))
+                
+                detail_window.after(5000, update_table)  
+
+            update_table()
 
             scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=tree.yview)
             scrollbar.pack(side='right', fill='y')
@@ -214,6 +227,7 @@ def open_detail_page():
 
     category_var.trace('w', show_category_detail)
 
+
 window = tk.Tk()
 window.title("Supply Chain Management")
 window.geometry('800x600')
@@ -227,7 +241,7 @@ button_frame.pack(pady=20)
 network_graph_button = tk.Button(button_frame, text="Show Network Graph", command=update_graph, width=20, height=2)
 network_graph_button.pack(pady=5)
 
-return_rate_button = tk.Button(button_frame, text="Show Return Rate", command=open_live_graph, width=20, height=2)
+return_rate_button = tk.Button(button_frame, text="Show Profit", command=open_live_graph, width=20, height=2)
 return_rate_button.pack(pady=5)
 
 detail_button = tk.Button(button_frame, text="Open Detail Page", command=open_detail_page, width=20, height=2)
