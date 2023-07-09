@@ -12,11 +12,14 @@ def get_data():
     data = json.loads(response.text)
     return data
 
-canvas = None  
-maximized_graph_window = None  
+canvas = None
+updating_graph = True
 
 def update_graph():
     global canvas, maximized_graph_window
+
+    if not updating_graph:
+        return
 
     data = get_data()
     plt.clf()
@@ -28,6 +31,8 @@ def update_graph():
         1: 'distributor',
         2: 'retailer'
     }
+    
+    edge_labels = {}
 
     for node in data['node']:
         node_type = node['type']
@@ -40,47 +45,38 @@ def update_graph():
         if direction[0] in node_mapping and direction[1] in node_mapping:
             provider = node_mapping[direction[0]].capitalize()
             receiver = node_mapping[direction[1]].capitalize()
-            graph.add_edge(provider, receiver)
+            commodity = edge['weight']
+            if isinstance(commodity, (list, tuple)):
+                commodity_str = f"Commodity: {commodity[-1]}"
+            else:
+                commodity_str = f"Commodity: {commodity}"
+            graph.add_edge(provider, receiver, commodity=commodity_str)
+            edge_labels[(provider, receiver)] = commodity_str
 
-    nx.draw_networkx(graph, with_labels=True, node_color='lightblue')
+    pos = nx.random_layout(graph)
+
+    nx.draw_networkx(graph, pos=pos, with_labels=True, node_color='lightblue')
+    nx.draw_networkx_edge_labels(graph, pos=pos, edge_labels=edge_labels)
     plt.title('Supply Chain Network')
     plt.axis('off')
 
     if canvas is not None:
         canvas.get_tk_widget().destroy()
 
-    canvas = FigureCanvasTkAgg(plt.gcf(), master=graph_frame)
+    figure = plt.gcf()
+    figure.set_size_inches(7, 5)
+
+    canvas = FigureCanvasTkAgg(figure, master=graph_frame)
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-    def maximize_graph(event):
-        global maximized_graph_window
-
-        if maximized_graph_window is not None:
-            return
-
-        maximized_graph_window = tk.Toplevel(window)
-        maximized_graph_window.title('Maximized Graph')
-        maximized_graph_window.state('zoomed')  
-
-        def close_max_window():
-            global maximized_graph_window
-            maximized_graph_window.destroy()
-            maximized_graph_window = None
-
-        maximized_graph_window.protocol("WM_DELETE_WINDOW", close_max_window)  
-
-        max_canvas = FigureCanvasTkAgg(plt.gcf(), master=maximized_graph_window)
-        max_canvas.draw()
-        max_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-        maximized_graph_window.bind('<Escape>', lambda event: close_max_window())
-
-    canvas.mpl_connect('button_press_event', maximize_graph)
     network_graph_button.pack_forget()
 
+    window.after(5000, update_graph)
+
 def open_live_graph():
-    global live_graph_window
+    global live_graph_window, updating_graph
+
+    updating_graph = False
 
     live_graph_window = tk.Toplevel(window)
     live_graph_window.title("Profit Live Time Graph")
@@ -102,6 +98,14 @@ def open_live_graph():
 
     live_graph_window.after(5000, update_live_graph, canvas)
 
+    def close_live_graph():
+        global updating_graph
+        updating_graph = True
+        live_graph_window.destroy()
+        update_graph()
+
+    live_graph_window.protocol("WM_DELETE_WINDOW", close_live_graph)
+
 def update_live_graph(canvas):
     data = get_data()
     money = data['resource']['money']
@@ -117,6 +121,9 @@ def update_live_graph(canvas):
     canvas._tkcanvas.after(5000, update_live_graph, canvas)
 
 def open_detail_page():
+    global updating_graph
+    updating_graph = False
+
     detail_window = tk.Toplevel(window)
     detail_window.title("Show More Detail")
     detail_window.geometry('800x600')
@@ -227,6 +234,13 @@ def open_detail_page():
 
     category_var.trace('w', show_category_detail)
 
+    def close_detail_page():
+        global updating_graph
+        updating_graph = True 
+        detail_window.destroy()
+        update_graph()
+
+    detail_window.protocol("WM_DELETE_WINDOW", close_detail_page)
 
 window = tk.Tk()
 window.title("Supply Chain Management")
@@ -247,7 +261,7 @@ return_rate_button.pack(pady=5)
 detail_button = tk.Button(button_frame, text="Open Detail Page", command=open_detail_page, width=20, height=2)
 detail_button.pack(pady=5)
 
-window.mainloop()
+window.mainloop() 
 
 
 
